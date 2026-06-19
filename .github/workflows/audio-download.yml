@@ -46,7 +46,7 @@ jobs:
           PIXABAY_DELAY_SECONDS: "1.5"
           PIXABAY_PER_PAGE: "200"
         run: |
-          python scripts/download_audio.py
+          python download_audio.py
 
       - name: Commit and push changes
         run: |
@@ -56,7 +56,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add audio_assets requirements.txt scripts/download_audio.py .github/workflows/audio-download.yml
+          git add audio_assets requirements.txt download_audio.py .github/workflows/audio-download.yml
           if git diff --cached --quiet; then
             echo "No staged changes to commit."
             exit 0
