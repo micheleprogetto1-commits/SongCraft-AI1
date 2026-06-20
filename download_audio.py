@@ -3,7 +3,7 @@ import sys
 import requests
 
 def main():
-    # Recupera la chiave dai Secrets di GitHub (o ambiente locale)
+    # Recupera la chiave dai Secrets di GitHub
     api_key = os.environ.get("PIXABAY_API_KEY")
     if not api_key:
         print("Errore: API Key non trovata nei segreti di ambiente.")
@@ -25,7 +25,7 @@ def main():
     results = data.get("results", [])
     
     if not results:
-        print("Nessun traccia audio trovata con i criteri cercati.")
+        print("Nessuna traccia audio trovata con i criteri cercati.")
         return
 
     # Crea la cartella di download se non esiste
@@ -33,8 +33,7 @@ def main():
 
     # Scarica i primi 3 risultati trovati
     for item in results[:3]:
-        audio_name = item.get("name", f"sound_{item['id']}").replace("/", "_")
-        # Prende il link della preview mp3 ad alta qualità
+        audio_name = item.get("name", f"sound_{item['id']}").replace("/", "_").replace("\\", "_")
         download_url = item.get("previews", {}).get("preview-hq-mp3")
         
         if not download_url:
