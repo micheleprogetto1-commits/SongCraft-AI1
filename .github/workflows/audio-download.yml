@@ -10,7 +10,7 @@ on:
       max_files:
         description: "Maximum number of files to download"
         required: false
-        default: "3"
+        default: "1500"
   schedule:
     - cron: "0 3 * * 1"
 
