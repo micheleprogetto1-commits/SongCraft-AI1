@@ -11,7 +11,7 @@ def main():
         sys.exit(1)
 
     query = "gaming music"
-    BATCH_SIZE = 400      # Limite di file da scaricare in questa specifica esecuzione
+    BATCH_SIZE = 100      # Limite di file da scaricare in questa specifica esecuzione
     TARGET_TOTAL = 2000   # Obiettivo finale globale
     
     os.makedirs("downloads", exist_ok=True)
