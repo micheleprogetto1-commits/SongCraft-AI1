@@ -31,8 +31,8 @@ def main():
     # Crea la cartella di download se non esiste
     os.makedirs("downloads", exist_ok=True)
 
-    # Scarica i primi 3 risultati trovati
-    for item in results[:3]:
+    # Scarica i primi 1500 risultati trovati
+    for item in results[:1500]:
         audio_name = item.get("name", f"sound_{item['id']}").replace("/", "_").replace("\\", "_")
         download_url = item.get("previews", {}).get("preview-hq-mp3")
         
