@@ -4,93 +4,70 @@ import requests
 import time
 
 def main():
-    # Recupera la chiave dai Secrets di GitHub
     api_key = os.environ.get("PIXABAY_API_KEY")
     if not api_key:
-        print("Errore: API Key non trovata nei segreti di ambiente.")
+        print("Errore: API Key non trovata.")
         sys.exit(1)
 
+    # Legge i valori che hai digitato a mano su GitHub
+    try:
+        page = int(os.environ.get("INPUT_PAGINA", 1))
+        block_size = int(os.environ.get("INPUT_BLOCCO", 100))
+    except ValueError:
+        page = 1
+        block_size = 100
+
+    # L'API di Freesound per una singola pagina eroga al massimo 150 risultati
+    if block_size > 150:
+        block_size = 150
+
     query = "gaming music"
-    BATCH_SIZE = 100      # Limite di file da scaricare in questa specifica esecuzione
-    TARGET_TOTAL = 1500   # Obiettivo finale globale
-    
     os.makedirs("downloads", exist_ok=True)
-    
-    # Conta quanti file .mp3 sono presenti fisicamente nella cartella
-    already_downloaded = [f for f in os.listdir("downloads") if f.endswith(".mp3")]
-    current_total_count = len(already_downloaded)
-    
-    print(f"File attualmente presenti nella repository: {current_total_count}/{TARGET_TOTAL}")
-    
-    if current_total_count >= TARGET_TOTAL:
-        print("Obiettivo globale di 1500 file completato!")
+
+    url = f"https://freesound.org/apiv2/search/text/?query={query}&token={api_key}&fields=id,name,previews&page_size={block_size}&page={page}"
+
+    print(f"=== ESECUZIONE MANUALE: BLOCCO SINGOLO ===")
+    print(f"Richiesta -> Pagina Freesound: {page} | Grandezza blocco: {block_size} file")
+
+    response = requests.get(url, timeout=15)
+    if response.status_code != 200:
+        print(f"Errore API Freesound: {response.status_code}")
+        sys.exit(1)
+
+    data = response.json()
+    results = data.get("results", [])
+
+    if not results:
+        print(f"La pagina {page} è vuota. Non ci sono più brani per questa ricerca.")
         sys.exit(0)
-        
-    downloaded_in_this_session = 0
-    page_size = 150
-    current_page = 1
-    
-    print(f"Avvio sessione di ricerca avanzata a scorrimento (Target sessione: +{BATCH_SIZE})...")
 
-    # Continua a ciclare finché non raggiungiamo il batch della sessione o il target totale
-    while downloaded_in_this_session < BATCH_SIZE and (current_total_count + downloaded_in_this_session) < TARGET_TOTAL:
-        # Costruiamo l'URL includendo esplicitamente il numero di pagina corrente
-        url = f"https://freesound.org/apiv2/search/text/?query={query}&token={api_key}&fields=id,name,previews&page_size={page_size}&page={current_page}"
-        print(f"Analisi dei risultati su Freesound - Pagina {current_page}...")
-        
+    scaricati_in_questo_blocco = 0
+
+    for item in results:
+        audio_name = item.get("name", f"sound_{item['id']}").replace("/", "_").replace("\\", "_")
+        download_url = item.get("previews", {}).get("preview-hq-mp3")
+
+        if not download_url:
+            continue
+
+        file_path = os.path.join("downloads", f"{audio_name}.mp3")
+
+        # Se il brano è già fisicamente nella tua cartella, lo salta
+        if os.path.exists(file_path):
+            continue
+
+        print(f"Download: {audio_name}...")
         try:
-            response = requests.get(url, timeout=15)
-            if response.status_code != 200:
-                print(f"Errore API Freesound alla pagina {current_page}: {response.status_code}")
-                break
-                
-            data = response.json()
-            results = data.get("results", [])
-            
-            if not results:
-                print("Nessun altro risultato disponibile su Freesound.")
-                break
+            res = requests.get(download_url, timeout=15)
+            if res.status_code == 200:
+                with open(file_path, "wb") as f:
+                    f.write(res.content)
+                scaricati_in_questo_blocco += 1
+                time.sleep(0.3) # Pausa di sicurezza per non farsi bloccare l'IP
+        except Exception as e:
+            print(f"Errore sul file {audio_name}: {e}")
 
-            for item in results:
-                if downloaded_in_this_session >= BATCH_SIZE or (current_total_count + downloaded_in_this_session) >= TARGET_TOTAL:
-                    break
-                    
-                audio_name = item.get("name", f"sound_{item['id']}").replace("/", "_").replace("\\", "_")
-                download_url = item.get("previews", {}).get("preview-hq-mp3")
-                
-                if not download_url:
-                    continue
-                    
-                file_path = os.path.join("downloads", f"{audio_name}.mp3")
-                
-                # Se il file esiste già su GitHub, lo ignoriamo e passiamo al prossimo
-                if os.path.exists(file_path):
-                    continue
-                    
-                global_index = current_total_count + downloaded_in_this_session + 1
-                print(f"[{global_index}/{TARGET_TOTAL}] Scaricamento in corso: {audio_name}...")
-                
-                try:
-                    audio_res = requests.get(download_url, timeout=15)
-                    if audio_res.status_code == 200:
-                        with open(file_path, "wb") as f:
-                            f.write(audio_res.content)
-                        downloaded_in_this_session += 1
-                        time.sleep(0.4) # Delay di sicurezza per non essere bloccati
-                except Exception as e:
-                    print(f"Impossibile scaricare {audio_name}: {e}")
-                    continue
-                    
-        except Exception as req_err:
-            print(f"Errore di connessione durante la lettura della pagina {current_page}: {req_err}")
-            break
-            
-        # Passiamo alla pagina successiva per il prossimo ciclo di controllo
-        current_page += 1
-
-    print(f"\n--- SESSIONE TERMINATA ---")
-    print(f"Nuovi file aggiunti in questo turno: {downloaded_in_this_session}")
-    print(f"Stato attuale della repository: {current_total_count + downloaded_in_this_session}/{TARGET_TOTAL}")
+    print(f"\nBlocco terminato. Nuovi brani scaricati: {scaricati_in_questo_blocco}")
 
 if __name__ == "__main__":
     main()
