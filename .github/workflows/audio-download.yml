@@ -1,9 +1,16 @@
-name: Download Freesound Audio
+name: Download Freesound Audio (Manuale)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "*/15 * * * *" # GIRA AUTOMATICAMENTE OGNI 15 MINUTI (IL MASSIMO CONSENTITO)
+    inputs:
+      pagina:
+        description: "Numero della pagina di Freesound da esplorare (1, 2, 3, 4...)"
+        required: true
+        default: "1"
+      dimensione_blocco:
+        description: "Quanti brani vuoi tentare di scaricare? (Max 150)"
+        required: true
+        default: "100"
 
 permissions:
   contents: write
@@ -31,6 +38,8 @@ jobs:
       - name: Download audio assets
         env:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          INPUT_PAGINA: ${{ github.event.inputs.pagina }}
+          INPUT_BLOCCO: ${{ github.event.inputs.dimensione_blocco }}
         run: |
           python download_audio.py
 
@@ -41,13 +50,13 @@ jobs:
           fi
           
           if git diff --cached --quiet; then
-            echo "Nessun nuovo file da caricare in questo turno."
+            echo "Nessun nuovo brano aggiunto in questo blocco."
             exit 0
           fi
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -m "Download rapido pacchetto audio [skip ci]"
+          git commit -m "Aggiunto blocco manuale (Pagina ${{ github.event.inputs.pagina }}) [skip ci]"
           git fetch origin "${GITHUB_REF_NAME}"
           git pull --rebase --autostash origin "${GITHUB_REF_NAME}" || true
           git push origin "HEAD:${GITHUB_REF_NAME}"
