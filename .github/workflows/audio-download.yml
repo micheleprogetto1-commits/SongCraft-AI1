@@ -42,13 +42,16 @@ jobs:
           INPUT_BLOCCO: ${{ github.event.inputs.dimensione_blocco }}
         run: |
           python download_audio.py
-          - name: Commit and push changes
+
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Aggiunge solo i file nuovi nella cartella downloads
-          git add downloads/
+          # Aggiunge i file nuovi nella cartella downloads
+          if [ -d "downloads" ]; then
+            git add downloads/
+          fi
           
           # Se non ci sono cambiamenti, esce senza errori
           if git diff --cached --quiet; then
@@ -56,7 +59,7 @@ jobs:
             exit 0
           fi
           
-          git commit -m "Aggiunto blocco manuale [skip ci]"
+          git commit -m "Aggiunto blocco manuale (Pagina ${{ github.event.inputs.pagina }}) [skip ci]"
           
-          # Tenta il push forzato solo dei nuovi file
+          # Carica i file in modo sicuro sulla repository principale
           git push origin HEAD:${GITHUB_REF_NAME}
