@@ -7,15 +7,3 @@ __pycache__/
 venv/
 env/
 
-# Downloads and generated assets
-ffmpeg.exe
-ffplay.exe
-*.part
-*.tmp
-
-# GitHub Actions / logs
-*.log
-
-# OS files
-Thumbs.db
-.DS_Store
